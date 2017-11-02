@@ -1,6 +1,3 @@
-all:
-	make server && make client
-
 server:
 	python3 server.py 5555
 
