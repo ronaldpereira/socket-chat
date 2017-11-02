@@ -13,9 +13,14 @@ print("Server started and listening.")
 
 sock.listen(65534)
 
-(clientSocket, adress) = sock.accept()
-print("Connected on a client.")
+while 1:
+	(clientSocket, adress) = sock.accept()
+	print("Connected on a client.")
 
-message = clientSocket.recv(65535).decode()
+	message = clientSocket.recv(65535).decode()
 
-print(message)
+	print(message)
+
+	message = clientSocket.recv(65535).decode()
+
+	print("Last message:"+message)
