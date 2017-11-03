@@ -19,6 +19,14 @@ class MessageTypes:
 
 		return messageTypes[type]
 
+class Communication:
+	def headerConstructor(type, destiny, seqnum):
+		return MessageTypes.getMessageType(type) + SERVERID + destiny.to_bytes(2, byteorder='big') + seqnum.to_bytes(2, byteorder='big')
+
+	def sendOK(clientSocket):
+		message = headerConstructor('OK', clientSocket.fileno(), 0)
+		clientSocket.send(message)
+
 host = '127.0.0.1'
 port = int(sys.argv[1])
 
@@ -33,16 +41,22 @@ server.listen(255)
 hostList = [server, sys.stdin]
 
 while 1:
-	(clientSocket, address) = server.accept()
-	print("Connected on client %d from %s." %(clientSocket.fileno(), address))
-	hostList.append(clientSocket)
-
-	print(hostList)
-
 	inputSockets, outputSockets, error = select.select(hostList, hostList, [])
-	print(inputSockets)
-	# print(message)
-	#
-	# message = clientSocket.recv(65535).decode()
-	#
-	# print("Last message:"+message)
+
+	for sock in inputSockets:
+
+		if sock == server:
+			(clientSocket, address) = server.accept()
+			print("Connected on client %d from %s." %(clientSocket.fileno(), address))
+
+			hostList.append(clientSocket)
+			print(hostList)
+
+			recvMessage = clientSocket.recv(BUFSIZE)
+
+			message = Communication.sendOK(clientSocket)
+
+
+
+
+			print(inputSockets)

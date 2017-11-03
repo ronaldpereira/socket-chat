@@ -44,3 +44,4 @@ client.connect((host, port))
 print("Successfully connected on %s:%d" %(host, port))
 
 chat = Communication()
+chat.sendOI(client)
