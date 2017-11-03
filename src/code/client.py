@@ -1,9 +1,10 @@
 import sys
 import socket
 import select
+import binascii
 
 SERVERID = 65535 # ID do servidor = 65535
-BUFSIZE = 65535 # Maximum buffer size
+BUFSIZE = 400 # Maximum buffer size
 
 class MessageTypes:
 	def getMessageType(type):
@@ -18,7 +19,7 @@ class MessageTypes:
 						}
 
 		return messageTypes[type]
-	
+
 
 class Communication:
 	def __init__(self):
@@ -27,6 +28,10 @@ class Communication:
 
 	def headerConstructor(self, type, destiny):
 		return MessageTypes.getMessageType(type) + self.clientID.to_bytes(2, byteorder='big') + destiny.to_bytes(2, byteorder='big') + self.seqnum.to_bytes(2, byteorder='big')
+
+	def sendOK(self, client):
+		message = self.headerConstructor('OK', SERVERID)
+		client.send(message)
 
 	def sendOI(self, client):
 		message = self.headerConstructor('OI', SERVERID)
@@ -51,7 +56,6 @@ class Communication:
 		message = self.headerConstructor('CREQ', SERVERID)
 		client.send(message)
 		recvMessage = client.recv(BUFSIZE)
-		print(recvMessage)
 
 		if recvMessage[0:2] == MessageTypes.getMessageType('CLIST'):
 			numberClients = int.from_bytes(recvMessage[8:10], byteorder='big')
@@ -59,10 +63,27 @@ class Communication:
 
 			for i in range(1,numberClients+1):
 				print(int.from_bytes(recvMessage[(8+i*2):(10+i*2)], byteorder='big'), end=' ')
-			print('\n')
+			print('')
 
 		message = self.headerConstructor('OK', SERVERID)
 		client.send(message)
+
+	def sendMSG(self, client, destiny, text):
+		message = self.headerConstructor('MSG', destiny)
+		message += len(text).to_bytes(2, byteorder='big')
+
+		for c in text:
+			message += int(c).to_bytes(1, byteorder='big')
+
+		client.send(message)
+
+		recvMessage = client.recv(BUFSIZE)
+
+		if recvMessage[0:2] == MessageTypes.getMessageType('OK'):
+			print("Message delivered.")
+
+		elif recvMessage[0:2] == MessageTypes.getMessageType('ERRO'):
+			print("ERROR!")
 
 
 host = sys.argv[1]
@@ -87,11 +108,18 @@ while active:
 	for sock in inputSockets:
 
 		if sock == client:
-			pass
+			recvMessage = client.recv(BUFSIZE)
+
+			print("Message from [%d]:" %(int.from_bytes(recvMessage[2:4], byteorder='big')), end=' ')
+
+			print(recvMessage[10:].decode())
+
+			print('')
+
+			chat.sendOK(client)
 
 		elif sock == sys.stdin:
 			data = sys.stdin.readline().split('\n')[0]
-			print(data)
 			data = data.split(' ')
 
 			if data[0].upper() == 'OI':
@@ -103,5 +131,10 @@ while active:
 
 			elif data[0].upper() == 'CREQ':
 				chat.sendCREQ(client)
+
+			elif data[0].upper() == 'MSG':
+				text = " ".join(data[4:]).encode('ascii')
+				chat.sendMSG(client, int(data[2]), text)
+
 
 client.close()

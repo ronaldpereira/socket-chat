@@ -3,7 +3,7 @@ import socket
 import select
 
 SERVERID = 65535 # ID do servidor = 65535
-BUFSIZE = 65535 # Maximum buffer size
+BUFSIZE = 400 # Maximum buffer size
 
 class MessageTypes:
 	def getMessageType(type):
@@ -18,7 +18,7 @@ class MessageTypes:
 						}
 
 		return messageTypes[type]
-	
+
 
 class Communication:
 	def headerConstructor(type, destiny, seqnum):
@@ -26,6 +26,10 @@ class Communication:
 
 	def sendOK(clientSocket):
 		message = Communication.headerConstructor('OK', clientSocket.fileno()-3, 0)
+		clientSocket.send(message)
+
+	def sendERRO(clientSocket):
+		message = Communication.headerConstructor('ERRO', clientSocket.fileno()-3, 0)
 		clientSocket.send(message)
 
 	def sendCLIST(clientSocket, hostList):
@@ -43,6 +47,44 @@ class Communication:
 		if recvMessage[0:2] == MessageTypes.getMessageType('OK'):
 			return
 
+	def sendMSG(origin, message, hostList):
+		source = int.from_bytes(message[2:4], byteorder='big') + 3
+		destiny = int.from_bytes(message[4:6], byteorder='big')
+
+		if destiny > 0:
+			destiny += 3
+
+			for host in hostList:
+				if host.fileno() == destiny:
+					host.send(message)
+					recvMessage = host.recv(BUFSIZE)
+
+					if recvMessage[0:2] == MessageTypes.getMessageType('OK'):
+						Communication.sendOK(origin)
+
+					elif recvMessage[0:2] == MessageTypes.getMessageType('ERRO'):
+						Communication.sendERRO(origin)
+					return
+
+			Communication.sendERRO(origin)
+
+		else:
+			valid = True
+			for host in hostList:
+				if host != origin:
+					host.send(message)
+					recvMessage = host.recv(BUFSIZE)
+
+					if recvMessage[0:2] == MessageTypes.getMessageType('ERRO'):
+						valid = False
+
+			if valid:
+				Communication.sendOK(origin)
+
+			else:
+				Communication.sendERRO(origin)
+
+
 host = '127.0.0.1'
 port = int(sys.argv[1])
 
@@ -59,7 +101,7 @@ hostList = [server, sys.stdin]
 active = True
 
 while active:
-	inputSockets, outputSockets, error = select.select(hostList, hostList, [])
+	inputSockets, outputSockets, error = select.select(hostList, hostList[2:], [])
 
 	for sock in inputSockets:
 
@@ -77,10 +119,10 @@ while active:
 			recvMessage = sock.recv(BUFSIZE)
 
 			if recvMessage[0:2] == MessageTypes.getMessageType('MSG'):
-				pass
+				Communication.sendMSG(sock, recvMessage, hostList[2:])
 
 			elif recvMessage[0:2] == MessageTypes.getMessageType('OI'):
-				Communication.sendOK(clientSocket)
+				Communication.sendOK(sock)
 
 			elif recvMessage[0:2] == MessageTypes.getMessageType('FLW'):
 				Communication.sendOK(sock)
