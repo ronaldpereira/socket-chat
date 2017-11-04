@@ -216,7 +216,12 @@ while active:
 		elif sock == sys.stdin: # If the socket is the sys.stdin, try to receive a command
 			if sys.stdin.readline().split('\n')[0].upper() == 'SHUTDOWN':
 				active = False
-				print('Server closed successfully.')
+
+				for sock in hostList[2:]: # For each socket connected
+					sock.close() # Close all the connections before closing the server socket
+					hostList.remove(sock) # Remove all clients from the hostList
+
+				print('Clients closed successfully.')
 
 		else: # If the socket is not the server neither the sys.stdin, the message comes from a client socket
 			recvMessage = sock.recv(BUFSIZE)
@@ -259,3 +264,4 @@ while active:
 				Communication.sendMSGAP(sock, recvMessage, nicknames, hostList[2:])
 
 server.close() # Close the server socket connection
+print('Server closed successfully.')
