@@ -42,6 +42,10 @@ class Communication: # Contains all the communication methods
 		message = Communication.headerConstructor('ERRO', origin.fileno()-3, 0)
 		origin.send(message)
 
+	def sendFLW(origin): # Method to send FLW message to the origin socket
+		message = Communication.headerConstructor('FLW', origin.fileno()-3, 0)
+		origin.send(message)
+
 	def sendCLIST(origin, hostList): # Method to send the ClientLIST (just the IDs) to the origin socket
 		message = Communication.headerConstructor('CLIST', origin.fileno()-3, 0)
 
@@ -200,9 +204,9 @@ server.listen(255) # Listen to a maximum of 255 paralel connections
 hostList = [server, sys.stdin] # Host list for the select function
 nicknames = [] # Nicknames list for the program extension
 
-active = True # Flag for the server to continue running
+shutdownCommand = False # Flag for the server to continue running
 
-while active:
+while len(hostList) > 2 or not shutdownCommand: # While the hostList length is greater than 2 (server and sys.stdin) and the shutdown command hasn't been given, keep running the server
 	inputSockets, outputSockets, error = select.select(hostList, hostList[2:], []) # Get all the ready inputSockets and outputSockets (except the server and sys.stdin)
 
 	for sock in inputSockets: # For each socket ready to be read
@@ -215,13 +219,10 @@ while active:
 
 		elif sock == sys.stdin: # If the socket is the sys.stdin, try to receive a command
 			if sys.stdin.readline().split('\n')[0].upper() == 'SHUTDOWN':
-				active = False
+				shutdownCommand = True # Sets the shutdown command to be True, so the shutdown procedure will begin
 
 				for sock in hostList[2:]: # For each socket connected
-					sock.close() # Close all the connections before closing the server socket
-					hostList.remove(sock) # Remove all clients from the hostList
-
-				print('Clients closed successfully.')
+					Communication.sendFLW(sock) # Send a FLW message to require a FLW message from the socket
 
 		else: # If the socket is not the server neither the sys.stdin, the message comes from a client socket
 			recvMessage = sock.recv(BUFSIZE)
@@ -239,6 +240,8 @@ while active:
 				for nickname in nicknames:
 					if nickname[0] == sock.fileno(): # If the origin socket registered a nickname, remove it from the nicknames list
 						nicknames.remove(nickname)
+
+				print("Disconnected from client ", sock.fileno()-3,".", sep='')
 
 				sock.close() # Close the connection with the origin socket
 
@@ -263,5 +266,6 @@ while active:
 			elif recvMessage[0:2] == MessageTypes.getMessageType('MSGAP'): # If the received message is a MSGAP type
 				Communication.sendMSGAP(sock, recvMessage, nicknames, hostList[2:])
 
+print('Clients closed successfully.')
 server.close() # Close the server socket connection
 print('Server closed successfully.')

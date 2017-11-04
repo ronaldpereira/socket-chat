@@ -184,13 +184,18 @@ while active:
 		if sock == client: # If the socket is the client socket, tries to receive a message from the server
 			recvMessage = client.recv(BUFSIZE)
 
-			print("Message from [%d]:" %(int.from_bytes(recvMessage[2:4], byteorder='big')), end=' ')
+			if recvMessage[0:2] == MessageTypes.getMessageType('FLW'): # If the received message is a FLW type
+				chat.sendFLW(client)
+				active = False # Sets the running flag to be False, so the client will shutdown
 
-			print(recvMessage[10:].decode())
+			else:
+				print("Message from [%d]:" %(int.from_bytes(recvMessage[2:4], byteorder='big')), end=' ')
 
-			print('')
+				print(recvMessage[10:].decode())
 
-			chat.sendOK(client)
+				print('')
+
+				chat.sendOK(client)
 
 		elif sock == sys.stdin: # If the socket is the sys.stdin, tries to receive a command
 			data = sys.stdin.readline().split('\n')[0] # Gets the command line from the sys.stdin input, without the '\n'
