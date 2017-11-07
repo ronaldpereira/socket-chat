@@ -158,7 +158,19 @@ class Communication: # Contains all the communication methods
 		elif recvMessage[0:2] == MessageTypes.getMessageType('ERRO'):
 			print("ERROR!")
 
-
+class HelpMenu:
+	def printHelpMenu():
+		print('\nHelp Menu\n')
+		print('Commands available:\n')
+		print('> Print your client id:\noi\n')
+		print('> Create a nickname for your client:\noiap nickname\nExample:\noiap ronald\n')
+		print('> Print your client nickname:\noiap\n')
+		print('> Request a list of all connected clients:\ncreq\n')
+		print('> Request a list of all connected clients which has a nickname registered:\ncreqap\n')
+		print('> Send a message to a client using his id:\nmsg to id - text\nExample:\nmsg to 3 - Hello World!\n')
+		print('> Send a message to a client using his nickname:\nmsgap to id - text\nExample:\nmsgap to ronald - Hello World!\n')
+		print('> Send a message to every connected client (broadcast):\nmsg to 0 - text\nExample:\nmsg to 0 - Hello World!\n')
+		print('> Close the server connection and finish the client:\nflw\n\n')
 
 host = sys.argv[1] # Server address received by command line argument
 port = int(sys.argv[2]) # Server port received by command line argument
@@ -203,7 +215,6 @@ while active:
 
 			if data[0].upper() == 'OI': # If the received command is a OI type
 				chat.sendOI(client)
-				print('')
 
 			elif data[0].upper() == 'FLW': # If the received command is a FLW type
 				chat.sendFLW(client)
@@ -211,12 +222,10 @@ while active:
 
 			elif data[0].upper() == 'CREQ': # If the received command is a CREQ type
 				chat.sendCREQ(client)
-				print('')
 
 			elif data[0].upper() == 'MSG': # If the received command is a MSG type
 				text = " ".join(data[4:]).encode('ascii') # Joins all the text message into a text variable, separating each string by a space and encoding it to ascii
 				chat.sendMSG(client, int(data[2]), text)
-				print('')
 
 			elif data[0].upper() == 'OIAP': # If the received command is a OIAP type
 				if data[1:]:
@@ -224,16 +233,18 @@ while active:
 					chat.sendOIAP(client, nickname)
 				else:
 					chat.sendOIAP(client)
-				print('')
 
 			elif data[0].upper() == 'CREQAP': # If the received command is a CREQAP type
 				chat.sendCREQAP(client)
-				print('')
 
 			elif data[0].upper() == 'MSGAP': # If the received command is a MSGAP type
 				text = " ".join(data[4:]).encode('ascii') # Joins all the text message into a text variable, separating each string by a space and encoding it to ascii
 				chat.sendMSGAP(client, data[2], text)
-				print('')
+
+			elif data[0].upper() == 'HELP': # If the command is a help type
+				HelpMenu.printHelpMenu() # Prints the help menu in the command terminal
+
+			print('')
 
 
 client.close() # Close the client socket connection

@@ -190,7 +190,7 @@ class Communication: # Contains all the communication methods
 			Communication.sendERRO(origin) # If the host could not be found in the hostList, we send an ERRO message to the origin client
 
 
-host = '127.0.0.1' # Host address
+host = '0.0.0.0' # Host address
 port = int(sys.argv[1]) # Port received from the command line argument
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Alocate a socket using TCP protocol and IPv4
@@ -213,7 +213,7 @@ while len(hostList) > 2 or not shutdownCommand: # While the hostList length is g
 
 		if sock == server: # If the socket is the server, try to accept a new connection
 			(clientSocket, address) = server.accept()
-			print("Connected on client %d from %s." %(clientSocket.fileno()-3, address))
+			print("Connected on client ",clientSocket.fileno()-3,".", sep='')
 
 			hostList.append(clientSocket)
 
